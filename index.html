@@ -168,6 +168,11 @@ input[type=text],.mnav button{background:linear-gradient(135deg,rgba(255,255,255
 .menu svg{width:18px;height:18px}
 .menu .mi-ch{display:none}
 .menu .mi-d .mi-ic,.menu .mi-d .mi-lb{color:#FF7B7B}
+@keyframes slideL{from{opacity:0;transform:translateX(44px)}to{opacity:1;transform:none}}
+@keyframes slideR{from{opacity:0;transform:translateX(-44px)}to{opacity:1;transform:none}}
+.sl{animation:slideL .3s ease-out}
+.sr{animation:slideR .3s ease-out}
+@media (prefers-reduced-motion:reduce){.sl,.sr{animation:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -526,6 +531,9 @@ input[type=text],.mnav button{background:linear-gradient(135deg,rgba(255,255,255
   function route(){
     var r=(location.hash==="#report");
     $("view-tracker").hidden=r; $("view-report").hidden=!r;
+    var dir=(lastR===null)?null:((r&&!lastR)?"sl":((!r&&lastR)?"sr":null)); lastR=r;
+    var vv=r?$("view-report"):$("view-tracker"); vv.classList.remove("sl","sr");
+    if(dir){ void vv.offsetWidth; vv.classList.add(dir); }
     var a=$("t-tracker"), b=$("t-report");
     if(r){b.setAttribute("aria-current","page");a.removeAttribute("aria-current");renderReport();}
     else{a.setAttribute("aria-current","page");b.removeAttribute("aria-current");render();}
@@ -575,6 +583,21 @@ input[type=text],.mnav button{background:linear-gradient(135deg,rgba(255,255,255
     window.addEventListener("resize",size);
     size();
     if(!reduce) loop();
+  })();
+  var lastR=null;
+  (function(){
+    var sx=0, sy=0, st=0, track=false;
+    document.addEventListener('touchstart',function(e){
+      if(e.touches.length!==1||(e.target.closest&&e.target.closest('input,textarea'))){ track=false; return; }
+      var t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now(); track=true;
+    },{passive:true});
+    document.addEventListener('touchend',function(e){
+      if(!track) return; track=false;
+      var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+      if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-st>700) return;
+      if(dx<0&&location.hash!=='#report') location.hash='report';
+      else if(dx>0&&location.hash==='#report') location.hash='tracker';
+    },{passive:true});
   })();
   route();
 })();
